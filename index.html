@@ -258,30 +258,44 @@ select option[value=""] { color: #888; }
 const API_URL = "https://script.google.com/macros/s/AKfycbxaAz1Z1PKwIyiyDV_WCT1qhHC_ALdsgpqH0U0Xf1oeWFHYHISjK5unJtyCtSYISMu7/exec"; 
 let usuarioActual = "";
 
-// Máscara de fecha mejorada con validación
+// Máscara de fecha CORREGIDA - Reemplaza la versión anterior
 const inputFecha = document.getElementById('login-fecha');
 inputFecha.addEventListener('input', function(e) {
-  let v = this.value.replace(/\D/g, '');
-  if (v.length >= 2) v = v.substring(0,2) + '/' + v.substring(2,4);
-  if (v.length >= 5) v = v.substring(0,5) + '/' + v.substring(5,9);
-  this.value = v.substring(0,10);
+  let valor = this.value.replace(/\D/g, ''); // Solo números
+  
+  // Formato DD/MM/AAAA
+  if (valor.length >= 2) {
+    this.value = valor.substring(0, 2) + '/' + valor.substring(2, 4);
+  }
+  if (valor.length >= 4) {
+    this.value = valor.substring(0, 2) + '/' + 
+                 valor.substring(2, 4) + '/' + 
+                 valor.substring(4, 8);
+  }
+  
+  // Limitar a 10 caracteres
+  if (this.value.length > 10) {
+    this.value = this.value.substring(0, 10);
+  }
 });
 
-// Validación regex fecha DD/MM/AAAA
+// Validación al enviar (permite escribir libremente)
 function validarFechaNacimiento(fecha) {
-  const regex = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
-  return regex.test(fecha);
+  // Quitar espacios y verificar formato
+  const limpia = fecha.trim();
+  const regex = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/(19|20)\d{2}$/;
+  
+  if (!regex.test(limpia)) return false;
+  
+  // Validación lógica fecha (días válidos por mes)
+  const [dia, mes, ano] = limpia.split('/').map(Number);
+  const fechaObj = new Date(ano, mes - 1, dia);
+  return fechaObj.getDate() === dia && 
+         fechaObj.getMonth() === mes - 1 && 
+         fechaObj.getFullYear() === ano &&
+         ano >= 1900 && ano <= 2010; // Rango razonable socios
 }
 
-function validarLunes(input) {
-  const fechaSeleccionada = new Date(input.value + 'T00:00:00');
-  const diaSemana = fechaSeleccionada.getDay();
-  if (diaSemana === 1) {
-    alert("📌 El club permanece cerrado los días lunes por mantenimiento. Por favor, seleccione otro día.");
-    input.value = "";
-    document.getElementById('config-area').classList.add('hidden');
-  }
-}
 
 async function llamarAPI(accion, datos = {}) {
   const loader = document.getElementById('loading');
